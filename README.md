@@ -49,3 +49,13 @@ npx hexo new "文章标题"
 ## 依赖审计
 
 迁移时 `npm audit` 报告 7 项 low 告警，源于 Hexo 上游的 `deepmerge` 传递依赖；无 moderate/high/critical 告警。当前没有通过降级 Hexo 消除告警，后续应随上游修复更新锁文件。
+
+## CanBitTimingTool
+
+从导航「工具」打开 `/tools/can-bit-timing-tool/`。纯浏览器计算，无第三方运行时依赖或服务器。支持经典 CAN、CAN FD / FDCAN 仲裁段、数据段以及 BRS 双阶段计算。
+
+输入有效时钟（MHz）、波特率（kbit/s）、目标采样点、采样点筛选范围、波特率误差与固定 SJW。两段可分别设置 Prescaler 上下限及步长、TSEG1/TSEG2 上下限；上下限均包含边界。每个预分频/总 TQ 组合保留最优采样点分割，再排序展示前 20 项，支持 TSV 复制。
+
+预设仅供搜索起步，不绑定或保证适用于任何芯片。输入和输出都是实际计数值，需自行核对控制器限制、时钟树、延时、晶振容差和 TDC。搜索性能上限为 Prescaler 4096、TSEG1/TSEG2 1024；计算由 Web Worker 执行，修改输入即清空旧结果。
+
+`npm test` 运行计算公式与边界测试；`npm run build` 构建博客和工具。

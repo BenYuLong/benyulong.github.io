@@ -9,7 +9,8 @@
   "scripts": {
     "clean": "hexo clean",
     "build": "hexo generate",
-    "server": "hexo server"
+    "server": "hexo server",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "hexo": "8.1.2",

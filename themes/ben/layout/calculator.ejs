@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="<%- url_for('/css/calculator.css') %>">
+<section class="calculator" aria-labelledby="tool-title">
+<header class="tool-header"><p class="eyebrow">CAN / CAN FD · BIT TIMING</p><h1 id="tool-title">CanBitTimingTool</h1><p>从目标波特率，找到合适的位时序。</p><span class="tool-badge">芯片无关 · 自定义范围 · 浏览器本地计算</span></header>
+<noscript><p class="tool-message">请启用 JavaScript 后使用计算器。</p></noscript>
+<form id="timing-form">
+<div class="tool-panel"><h2>01 <span>计算设置</span></h2><div class="field-grid settings">
+<label>计算模式<select id="mode"><option value="classic">经典 CAN</option><option value="nominal">CAN FD / FDCAN 仲裁段</option><option value="data">CAN FD / FDCAN 数据段</option><option value="brs">CAN FD BRS · 仲裁段 + 数据段</option></select></label>
+<label>有效时钟频率 <span>MHz</span><input id="clock" type="number" min="0.000001" max="10000" step="any" value="80" required></label>
+<label>允许波特率误差 <span>%</span><input id="error" type="number" min="0" max="50" step="any" value="0.5" required></label></div>
+<p class="field-help">输入进入位时序预分频器前的有效时钟，包含上游时钟分频的影响。允许误差设为 0 时仅保留精确波特率。</p></div>
+<% for (const phase of ['nominal','data']) { const isData=phase==='data'; const prefix=isData?'数据段':'经典 CAN / 仲裁段'; %>
+<fieldset id="<%= phase %>-fields" class="tool-panel phase-panel" <%- isData ? 'hidden disabled' : '' %>><legend><%= prefix %></legend>
+<div class="phase-heading"><h2><%= isData?'03':'02' %> <span><%= prefix %>参数</span></h2><label class="preset-label">范围预设<select data-preset="<%= phase %>"><% if (!isData) { %><option value="classic">经典 CAN 常用范围</option><option value="nominal">FD 仲裁段常用范围</option><% } else { %><option value="data">FD 数据段常用范围</option><% } %><option value="custom">自定义</option></select></label></div>
+<div class="field-grid">
+<label>目标波特率 <span>kbit/s</span><input data-key="bitrateKbps" type="number" min="0.000001" max="1000000" step="any" value="<%= isData?2000:500 %>" required></label>
+<label>目标采样点 <span>%</span><input data-key="samplePoint" type="number" min="0.000001" max="99.999999" step="any" value="<%= isData?80:87.5 %>" required></label>
+<label>SJW <span>TQ</span><input data-key="sjw" type="number" min="1" max="1024" step="1" value="1" required></label>
+</div>
+<div class="range-grid"><div class="range-field"><h3>采样点筛选 <span>%</span></h3><div><label>最小值<input data-key="sampleMin" type="number" min="0" max="100" step="any" value="<%= isData?60:70 %>" required></label><span>—</span><label>最大值<input data-key="sampleMax" type="number" min="0" max="100" step="any" value="95" required></label></div></div>
+<% for(const [key,label,max] of [['prescaler','Prescaler',isData?32:1024],['seg1','Time Seg1 (TSEG1)',isData?32:16],['seg2','Time Seg2 (TSEG2)',isData?16:8]]) { %>
+<div class="range-field"><h3><%= label %><span><%= key==='prescaler'?'分频系数':'TQ' %></span></h3><div><label>最小值<input data-key="<%= key %>Min" type="number" min="1" max="<%= key==='prescaler'?4096:1024 %>" step="1" value="1" required></label><span>—</span><label>最大值<input data-key="<%= key %>Max" type="number" min="1" max="<%= key==='prescaler'?4096:1024 %>" step="1" value="<%= max %>" required></label></div></div><% } %></div>
+<div class="field-grid"><label>Prescaler 步长<input data-key="prescalerStep" type="number" min="1" max="4096" step="1" value="1" required></label></div>
+<p class="field-help">上下限均包含边界；步长从最小 Prescaler 起算。范围预设是搜索起点，并非所有控制器的通用限制。SJW 固定为输入值，搜索要求 SJW ≤ TSEG2。</p>
+</fieldset><% } %>
+<div class="tool-actions"><button class="calculate-button" type="submit">计算候选方案 <span aria-hidden="true">→</span></button><button type="reset" class="reset-button">恢复默认</button><p id="status" role="status" aria-live="polite"></p></div>
+</form>
+<section id="results" aria-label="计算结果"></section>
+<details class="tool-panel tool-notes"><summary>公式、排序与使用说明</summary>
+<p>所有参数均为实际计数值，未进行寄存器的减一编码。SyncSeg 固定为 1 TQ；TSEG1 为传播段与相位段 1 的合计。</p><ul><li>TQ = Prescaler / 有效时钟频率</li><li>总 TQ = 1 + TSEG1 + TSEG2</li><li>实际波特率 = 有效时钟频率 / (Prescaler × 总 TQ)</li><li>采样点 = (1 + TSEG1) / 总 TQ × 100%</li></ul>
+<p>在搜索范围及波特率误差内，为每个 Prescaler / 总 TQ 组合保留最接近目标采样点的分割（等距时同时保留），再按波特率误差、采样点偏差、总 TQ 降序排列，展示前 20 项。采样点范围是包含边界的硬筛选；目标采样点用于排序，可在筛选范围外。</p>
+<p>BRS 两个阶段共用有效时钟，分别计算。该工具仅求解位时序，不代表配置一定满足具体控制器或物理总线要求。请核对控制器时序范围、SJW 约束、总线传播延时、晶振容差以及高速数据段的收发器延时补偿（TDC）。</p>
+<p>公式参考：<a href="https://kvaser.com/lesson/can-bit-timing/" target="_blank" rel="noopener">Kvaser CAN Bit Timing</a>。功能参考 <a href="https://star-plucking.github.io/canCalculator/" target="_blank" rel="noopener">CAN/FDCAN 智能参数计算器</a>，本工具独立实现。</p>
+</details></section>
+<script type="module" src="<%- url_for('/js/can-calculator.mjs') %>"></script>
