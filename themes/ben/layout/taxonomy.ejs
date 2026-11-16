@@ -1,0 +1,1 @@
+<section class="article"><header class="article-header"><p class="eyebrow">探索文字</p><h1><%= page.title %></h1></header><div class="taxonomy"><% site[page.taxonomy].sort('name').each(item => { %><a href="<%- url_for(item.path) %>"><span><%= item.name %></span><span class="count"><%= item.posts.length %> 篇 →</span></a><% }) %></div></section>

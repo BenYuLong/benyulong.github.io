@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= page.title ? page.title + ' | ' : '' %><%= config.title %></title>
+  <meta name="description" content="<%= page.excerpt ? strip_html(page.excerpt).slice(0, 160) : config.description %>">
+  <meta name="author" content="<%= config.author %>">
+  <link rel="canonical" href="<%= config.url + '/' + page.path %>">
+  <link rel="icon" href="<%- url_for('/img/favicon.ico') %>">
+  <link rel="alternate" type="application/atom+xml" title="<%= config.title %>" href="<%- url_for('/atom.xml') %>">
+  <link rel="stylesheet" href="<%- url_for('/css/style.css') %>">
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<header class="site-header"><a class="brand" href="<%- url_for('/') %>"><span class="brand-mark">B.</span><span>BIG BEN<span class="brand-small">学习 · 阅读 · 生活</span></span></a><nav aria-label="主导航"><% Object.entries(theme.menu).forEach(([label, href]) => { %><a href="<%- url_for(href) %>"<% if (href === '/' ? is_home() : page.path.startsWith(href.slice(1))) { %> aria-current="page"<% } %>><%= label %></a><% }) %></nav></header>
+<main id="main" class="site-main"><%- body %></main>
+<footer class="site-footer"><span>© <%= date(Date.now(), 'YYYY') %> <%= config.author %> · 每天进步一点点</span><span>由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> 驱动 · <a href="<%- url_for('/atom.xml') %>">RSS</a> · <a href="https://github.com/BenYuLong">GitHub ↗</a></span></footer>
+</body>
+</html>
