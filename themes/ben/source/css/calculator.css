@@ -2,3 +2,6 @@
 @media(max-width:700px){.calculator{margin-top:36px}.tool-panel{padding:18px}.field-grid,.settings{grid-template-columns:1fr}.range-grid{grid-template-columns:1fr}.phase-heading{align-items:flex-start;flex-direction:column}.best-result{padding:18px}.best-metrics{gap:12px}.best-metrics strong{font-size:21px}.calculate-button{flex:1}.tool-actions{gap:10px}.tool-header h1{font-size:29px}}
 
 .calculator [aria-invalid="true"]{border-color:#b44239;outline:2px solid #b44239;outline-offset:2px}.calculator .row-copy{min-height:32px;padding:4px 10px;font-size:11px;background:var(--surface);border:1px solid var(--line);color:var(--accent)}#share-output .copy-output{height:90px}.phase-heading h2 span span{font:inherit;color:inherit;margin:0}
+
+/* Keep controls aligned when labels have an extra unit line. */
+.field-grid>label>input,.field-grid>label>select{margin-top:auto;height:44px}

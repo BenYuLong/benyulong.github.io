@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="<%- url_for('/css/calculator.css') %>">
+<link rel="stylesheet" href="<%- tool_asset('css/calculator.css') %>">
 <section class="calculator" aria-labelledby="tool-title">
 <header class="tool-header"><p class="eyebrow">CAN / CAN FD · BIT TIMING</p><h1 id="tool-title">CanBitTimingTool</h1><p>从目标波特率，找到合适的位时序。</p><span class="tool-badge">芯片无关 · 自定义范围 · 浏览器本地计算</span></header>
 <noscript><p class="tool-message">请启用 JavaScript 后使用计算器。</p></noscript>
@@ -33,4 +33,4 @@
 <p>BRS 两个阶段共用有效时钟，分别计算。该工具仅求解位时序，不代表配置一定满足具体控制器或物理总线要求。请核对控制器时序范围、SJW 约束、总线传播延时、晶振容差以及高速数据段的收发器延时补偿（TDC）。</p>
 <p>公式参考：<a href="https://kvaser.com/lesson/can-bit-timing/" target="_blank" rel="noopener">Kvaser CAN Bit Timing</a>。</p>
 </details></section>
-<script type="module" src="<%- url_for('/js/can-calculator.mjs') %>"></script>
+<script type="module" src="<%- tool_asset('js/can-calculator.mjs') %>"></script>
