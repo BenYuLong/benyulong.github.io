@@ -1,5 +1,9 @@
-import { findTimings } from './can-timing.mjs';
-self.onmessage = ({data}) => {
- try { self.postMessage({results:data.map(({phase,options})=>({phase,rows:findTimings(options)}))}); }
- catch(error){self.postMessage({error:error.message});}
+import { findTimings, diagnoseTimings } from './can-timing.mjs';
+self.onmessage=({data})=>{
+ const results=[];
+ for(const {phase,options} of data){
+  try{const rows=findTimings(options);results.push({phase,rows,diagnosis:rows.length?'':diagnoseTimings(options)});}
+  catch(error){self.postMessage({error:error.message,field:error.field,phase});return;}
+ }
+ self.postMessage({results});
 };
