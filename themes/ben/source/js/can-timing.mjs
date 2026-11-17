@@ -1,3 +1,4 @@
+import { formatError } from './can-format.mjs';
 /** Functional timing counts, not register encodings. No controller-specific assumptions. */
 export function compareTimings(a, b) {
  return a.bitrateError-b.bitrateError || a.sampleError-b.sampleError || b.totalTq-a.totalTq || a.prescaler-b.prescaler || a.seg1-b.seg1;
@@ -66,11 +67,31 @@ export function findTimings(o) {
  return rows.sort(compare);
 }
 
-export function diagnoseTimings(o){
- if(o.sjw>o.seg2Max)return `SJW (${o.sjw}) 大于 TSEG2 最大值 (${o.seg2Max})，请调整这两项。`;
- const relaxed=findTimings({...o,sampleMin:0,sampleMax:100,limit:1,sortBy:'bitrate'});
- if(relaxed.length)return `采样点筛选过窄。保留当前波特率误差时，放宽采样点范围可以找到方案，例如采样点 ${relaxed[0].samplePoint.toFixed(3)}%。`;
- const approximate=findTimings({...o,sampleMin:0,sampleMax:100,maxError:50,limit:1,sortBy:'bitrate'});
- if(approximate.length)return `当前波特率误差限制过严。放宽采样点及误差后可找到 ${ (approximate[0].bitrate/1000).toFixed(6) } kbit/s 的方案，误差 ${approximate[0].bitrateError.toFixed(6)}%。请核对目标波特率或时钟。`;
- return '当前时钟、波特率和时序范围无法匹配。请核对有效时钟或目标波特率，或手动选择扩展范围；工具不会自动放宽限制。';
+export function diagnoseTimings(o){return timingSuggestions(o).message;}
+export function calculateTiming(o){
+ if(!Number.isFinite(o.clockMHz)||o.clockMHz<=0||o.clockMHz>10000)invalid('clockMHz','有效时钟频率必须大于 0 且不超过 10000 MHz');
+ for(const [key,label,max] of [['prescaler','Prescaler',4096],['seg1','TSEG1',1024],['seg2','TSEG2',1024],['sjw','SJW',1024]]){
+  if(!Number.isInteger(o[key])||o[key]<1||o[key]>max)invalid(key,`${label} 必须是 1–${max} 之间的整数`);
+ }
+ if(o.sjw>o.seg2)invalid('sjw','SJW 不能大于 TSEG2');
+ const totalTq=1+o.seg1+o.seg2,clock=o.clockMHz*1e6,bitrate=clock/(o.prescaler*totalTq);
+ const row={prescaler:o.prescaler,seg1:o.seg1,seg2:o.seg2,sjw:o.sjw,totalTq,bitrate,samplePoint:(1+o.seg1)/totalTq*100,tqNs:o.prescaler/clock*1e9,bitTimeNs:1/bitrate*1e9};
+ if(o.targetBitrateKbps!==undefined){
+  if(!Number.isFinite(o.targetBitrateKbps)||o.targetBitrateKbps<=0||o.targetBitrateKbps>1000000)invalid('targetBitrateKbps','目标波特率必须大于 0 且不超过 1000000 kbit/s');
+  row.targetBitrateKbps=o.targetBitrateKbps;row.bitrateError=Math.abs(bitrate/(o.targetBitrateKbps*1000)-1)*100;
+ }
+ if(o.targetSamplePoint!==undefined){
+  if(!Number.isFinite(o.targetSamplePoint)||o.targetSamplePoint<=0||o.targetSamplePoint>=100)invalid('targetSamplePoint','目标采样点必须大于 0 且小于 100%');
+  row.targetSamplePoint=o.targetSamplePoint;row.sampleError=Math.abs(row.samplePoint-o.targetSamplePoint);
+ }
+ return row;
+}
+export function timingSuggestions(o){
+ validateTimings(o);
+ if(o.sjw>o.seg2Max)return {kind:'sjw',message:`SJW (${o.sjw}) 大于 TSEG2 最大值 (${o.seg2Max})，请减小 SJW 或增大 TSEG2 上限。`};
+ const sample=findTimings({...o,sampleMin:0,sampleMax:100,limit:1,sortBy:'bitrate'})[0];
+ if(sample)return {kind:'sample',example:sample,message:`采样点筛选过窄。保持当前波特率误差及其他时序限制，放宽采样点范围可找到 ${sample.samplePoint.toFixed(6)}% 的方案。`};
+ const rate=findTimings({...o,sampleMin:0,sampleMax:100,maxError:50,limit:1,sortBy:'bitrate'})[0];
+ if(rate)return {kind:'bitrate',example:rate,message:`保持当前时序范围，将采样点范围放宽至 0–100%、允许误差放宽至 50% 后，最近可达波特率为 ${(rate.bitrate/1000).toFixed(6)} kbit/s，误差 ${formatError(rate.bitrateError)}%，采样点 ${rate.samplePoint.toFixed(6)}%。`};
+ return {kind:'range',message:'当前时序范围内，即使放宽采样点与波特率误差至 50% 仍无方案。请核对有效时钟、目标波特率或时序范围。'};
 }
